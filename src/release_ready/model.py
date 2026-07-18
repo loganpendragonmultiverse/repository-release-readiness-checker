@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from enum import StrEnum
+from enum import Enum
 from pathlib import Path
 
 
-class Severity(StrEnum):
+class Severity(str, Enum):
     PASS = "pass"
     INFO = "info"
     WARNING = "warning"
