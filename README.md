@@ -70,3 +70,7 @@ See [CONTRIBUTING.md](https://github.com/loganpendragonmultiverse/.github/blob/m
 **Feature complete for v1.0.** Security and correctness fixes are welcome; broader checks should remain evidence-based and read-only.
 
 Released under the [MIT License](LICENSE).
+
+## More open-source projects
+
+This project is part of the [Logan Pendragon Forge open-source collection](https://www.loganpendragonforge.com/open-source/). Browse the catalog for other released tools, source repositories, live demos, and downloads.
