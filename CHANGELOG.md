@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.0 - Unreleased
+
+- Add portable, value-free finding baselines and new/unchanged/resolved reports with opt-in new-only failure thresholds.
+- Preserve default CLI policy and source safety boundaries; add regression tests and documented limits.
+
 ## 1.0.0 - 2026-07-18
 
 - Added read-only repository scanning and severity-ranked findings.
