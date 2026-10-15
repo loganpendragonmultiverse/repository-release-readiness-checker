@@ -3,6 +3,7 @@ from __future__ import annotations
 import html
 import json
 
+from .baselines import Comparison
 from .model import Audit
 
 
@@ -39,3 +40,26 @@ h1{{font-size:clamp(2rem,6vw,4rem);margin:.2rem 0}}.score{{font-size:1.2rem;colo
 th,td{{padding:.8rem;text-align:left;border-bottom:1px solid #ddd;vertical-align:top}}th{{background:#2f2924;color:white}}.error td:first-child{{color:#a51d1d;font-weight:700}}.warning td:first-child{{color:#8a5a00;font-weight:700}}.pass td:first-child{{color:#176a3a;font-weight:700}}
 </style></head><body><main><p>Repository audit</p><h1>Release readiness</h1><p class="score">Score: {audit.score}/100 · {audit.files_scanned} files scanned</p>
 <table><thead><tr><th>Status</th><th>Location</th><th>Finding</th></tr></thead><tbody>{''.join(rows)}</tbody></table></main></body></html>"""
+
+
+def render_comparison(audit: Audit, comparison: Comparison, format: str) -> str:
+    """Append value-free baseline status while retaining the complete current audit."""
+    if format == "json":
+        data = audit.to_dict()
+        data["comparison"] = comparison.to_dict()
+        return json.dumps(data, indent=2, ensure_ascii=False)
+    summary = f"New: {len(comparison.new)} · Unchanged: {len(comparison.unchanged)} · Resolved: {len(comparison.resolved)}"
+    rows = []
+    for state, records in comparison.to_dict().items():
+        for record in records:
+            location = record["path"] or "Repository"
+            if record["line"]:
+                location += f":{record['line']}"
+            rows.append((state, record["rule"], record["severity"], location))
+    if format == "html":
+        table = "".join("<tr>" + "".join(f"<td>{html.escape(value)}</td>" for value in row) + "</tr>" for row in rows)
+        section = f'<h2>Baseline comparison</h2><p>{summary}</p><table><thead><tr><th>Change</th><th>Rule</th><th>Severity</th><th>Location</th></tr></thead><tbody>{table}</tbody></table>'
+        return render_html(audit).replace("</main>", section + "</main>")
+    lines = [render_text(audit), "", "Baseline comparison", summary]
+    lines.extend(f"{state.upper()} {severity.upper()} {rule} {location}" for state, rule, severity, location in rows)
+    return "\n".join(lines)

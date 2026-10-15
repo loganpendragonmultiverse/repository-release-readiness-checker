@@ -74,3 +74,34 @@ Released under the [MIT License](LICENSE).
 ## More open-source projects
 
 This project is part of the [Logan Pendragon Forge open-source collection](https://www.loganpendragonforge.com/open-source/). Browse the catalog for other released tools, source repositories, live demos, and downloads.
+
+## Baselines (1.1.0 source candidate)
+
+Save the current non-pass findings to a **new** JSON file, then compare another scan:
+
+```bash
+release-ready . --write-baseline ../readiness-baseline.json --fail-on never
+release-ready . --baseline ../readiness-baseline.json --format html --output ../comparison.html
+release-ready . --baseline ../readiness-baseline.json --new-only --fail-on warning
+```
+
+Without baseline options, report formats and failure thresholds are unchanged. With
+`--baseline`, all current findings remain visible and the comparison adds **new**,
+**unchanged**, and **resolved** groups. Only the explicit `--new-only` option limits
+the existing `--fail-on` threshold to new findings. A saved baseline is a review
+convenience, not evidence that old findings are safe.
+
+The version 1 baseline contains rule, severity, repository-relative path, line,
+and SHA-256 fingerprints. It omits the absolute repository root and finding
+messages; paths and rule names can still disclose project structure. Identities
+include severity, location and a digest of the diagnostic message, so relocation
+of the repository preserves identities, while line moves, evidence changes and
+severity changes appear as resolved/new findings. Identical findings at the same
+location collapse to one baseline entry. Pass findings are not baselined.
+
+Malformed, oversized (over 1 MB), unsupported-version, duplicate and tampered
+identity records are refused. Baseline output never overwrites a file. Reports
+written in baseline mode must also use new destinations, and neither output may
+replace the input baseline. Existing non-baseline report overwrite behavior is
+retained. Exit codes remain 0 for success, 1 for the selected finding threshold,
+and 2 for invalid input or an output failure. The target's commands are never run.
