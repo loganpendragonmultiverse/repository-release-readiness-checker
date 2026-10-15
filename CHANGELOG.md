@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.1.0 - Unreleased
+## 1.1.0 - 2026-10-15
 
 - Add portable, value-free finding baselines and new/unchanged/resolved reports with opt-in new-only failure thresholds.
 - Preserve default CLI policy and source safety boundaries; add regression tests and documented limits.

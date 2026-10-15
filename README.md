@@ -67,7 +67,7 @@ See [CONTRIBUTING.md](https://github.com/loganpendragonmultiverse/.github/blob/m
 
 ## Project status
 
-**Feature complete for v1.0.** Security and correctness fixes are welcome; broader checks should remain evidence-based and read-only.
+**Version 1.1.0.** Security and correctness fixes are welcome; broader checks should remain evidence-based and read-only.
 
 Released under the [MIT License](LICENSE).
 
@@ -75,7 +75,7 @@ Released under the [MIT License](LICENSE).
 
 This project is part of the [Logan Pendragon Forge open-source collection](https://www.loganpendragonforge.com/open-source/). Browse the catalog for other released tools, source repositories, live demos, and downloads.
 
-## Baselines (1.1.0 source candidate)
+## Baselines (1.1.0)
 
 Save the current non-pass findings to a **new** JSON file, then compare another scan:
 
