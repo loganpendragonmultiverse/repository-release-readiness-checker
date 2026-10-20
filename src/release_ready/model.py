@@ -19,6 +19,7 @@ class Finding:
     message: str
     path: str | None = None
     line: int | None = None
+    evidence_sha256: str = ""
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
@@ -29,6 +30,7 @@ class Audit:
     target: Path
     findings: tuple[Finding, ...]
     files_scanned: int
+    uninspected_paths: tuple[str, ...] = ()
 
     @property
     def score(self) -> int:
@@ -48,6 +50,8 @@ class Audit:
             "target": str(self.target),
             "score": self.score,
             "files_scanned": self.files_scanned,
+            "content_inspection_complete": not self.uninspected_paths,
+            "uninspected_paths": list(self.uninspected_paths),
             "summary": {"errors": self.errors, "warnings": self.warnings},
             "findings": [item.to_dict() for item in self.findings],
         }

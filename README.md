@@ -67,7 +67,7 @@ See [CONTRIBUTING.md](https://github.com/loganpendragonmultiverse/.github/blob/m
 
 ## Project status
 
-**Version 1.1.0.** Security and correctness fixes are welcome; broader checks should remain evidence-based and read-only.
+**Version 1.2.0.** Security and correctness fixes are welcome; broader checks should remain evidence-based and read-only.
 
 Released under the [MIT License](LICENSE).
 
@@ -102,6 +102,26 @@ location collapse to one baseline entry. Pass findings are not baselined.
 Malformed, oversized (over 1 MB), unsupported-version, duplicate and tampered
 identity records are refused. Baseline output never overwrites a file. Reports
 written in baseline mode must also use new destinations, and neither output may
-replace the input baseline. Existing non-baseline report overwrite behavior is
-retained. Exit codes remain 0 for success, 1 for the selected finding threshold,
+replace the input baseline. Existing regular reports now require explicit `--overwrite` outside baseline mode. Exit codes remain 0 for success, 1 for the selected finding threshold,
 and 2 for invalid input or an output failure. The target's commands are never run.
+
+## Inspection boundaries
+
+No Git or repository command is executed. Repository symlink roots, files and
+directories are refused; ignored dependency/VCS directories are pruned. Text
+inspection is bounded during reads. JSON reports expose skipped content paths,
+and text/HTML reports display the count: a readiness score is never proof of
+complete security inspection. Binary, oversized and unreadable files remain
+outside content inspection.
+
+If content is skipped, unmatched baseline findings are `unverified`, rather than
+`resolved`. An incomplete content scan cannot be saved as a new baseline, and
+`--new-only` returns exit 2. Normal reports retain known findings and the existing
+failure threshold. Missing local-link messages omit the raw target, retaining a digest for baseline identity and avoiding
+accidental secret values in a diagnostic. Basic .env ignore matching accounts
+for comments and later negation; it is not a complete Git ignore interpreter.
+
+Report creation is exclusive by default, with explicit `--overwrite` for regular
+non-baseline reports. Symlink outputs, including dangling links, are refused.
+Use a stable trusted tree; concurrent hostile filesystem mutation is outside
+scope. Baselines remain value-free review aids, not security certification.

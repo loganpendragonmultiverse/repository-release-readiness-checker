@@ -29,7 +29,7 @@ def _record(finding: Finding) -> dict[str, object]:
         "severity": finding.severity.value,
         "path": finding.path,
         "line": finding.line,
-        "evidence_sha256": hashlib.sha256(finding.message.encode("utf-8")).hexdigest(),
+        "evidence_sha256": finding.evidence_sha256 or hashlib.sha256(finding.message.encode("utf-8")).hexdigest(),
     }
     record["id"] = _identity(record)
     return record
@@ -55,12 +55,12 @@ def _unique_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
 
 
 def load_baseline(path: Path) -> tuple[dict[str, object], ...]:
-    if path.stat().st_size > MAX_BASELINE_BYTES:
-        raise ValueError("Baseline exceeds 1 MB")
     try:
-        data = json.loads(
-            path.read_text(encoding="utf-8"), object_pairs_hook=_unique_object
-        )
+        with path.open("rb") as handle:
+            content = handle.read(MAX_BASELINE_BYTES + 1)
+        if len(content) > MAX_BASELINE_BYTES:
+            raise ValueError("Baseline exceeds 1 MB")
+        data = json.loads(content.decode("utf-8"), object_pairs_hook=_unique_object)
     except (UnicodeError, json.JSONDecodeError, RecursionError) as exc:
         raise ValueError("Baseline must contain valid UTF-8 JSON") from exc
     return _validate(data)
@@ -119,12 +119,14 @@ class Comparison:
     new: tuple[dict[str, object], ...]
     unchanged: tuple[dict[str, object], ...]
     resolved: tuple[dict[str, object], ...]
+    unverified: tuple[dict[str, object], ...] = ()
 
     def to_dict(self) -> dict[str, object]:
         return {
             "new": list(self.new),
             "unchanged": list(self.unchanged),
             "resolved": list(self.resolved),
+            "unverified": list(self.unverified),
         }
 
     def new_findings(self, audit: Audit) -> tuple[Finding, ...]:
@@ -142,11 +144,16 @@ def compare(audit: Audit, previous: tuple[dict[str, object], ...]) -> Comparison
     return Comparison(
         tuple(current[key] for key in sorted(current.keys() - old.keys())),
         tuple(current[key] for key in sorted(current.keys() & old.keys())),
-        tuple(old[key] for key in sorted(old.keys() - current.keys())),
+        tuple(old[key] for key in sorted(old.keys() - current.keys())) if not audit.uninspected_paths else (),
+        tuple(old[key] for key in sorted(old.keys() - current.keys())) if audit.uninspected_paths else (),
     )
 
 
 def write_baseline(path: Path, audit: Audit) -> None:
+    if audit.uninspected_paths:
+        raise ValueError("Cannot save baseline from incomplete content inspection")
+    if path.exists() or path.is_symlink():
+        raise ValueError("Baseline output already exists or is a symlink")
     payload = snapshot(audit)
     _validate(payload)
     content = json.dumps(payload, indent=2, ensure_ascii=False) + "\n"
