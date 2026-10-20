@@ -15,6 +15,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("target", nargs="?", default=".", help="repository directory (default: current directory)")
     parser.add_argument("--format", choices=("text", "json", "html"), default="text", help="report format")
     parser.add_argument("--output", type=Path, help="write the report to a file instead of stdout")
+    parser.add_argument("--overwrite", action="store_true", help="replace an existing regular report outside baseline mode")
     parser.add_argument("--fail-on", choices=("error", "warning", "never"), default="error", help="finding level that produces a non-zero exit")
     parser.add_argument("--baseline", type=Path, help="compare with a version 1 finding baseline")
     parser.add_argument("--write-baseline", type=Path, help="save current non-pass findings to a new file")
@@ -32,17 +33,23 @@ def main(argv: list[str] | None = None) -> int:
             raise ValueError("Report and baseline destinations must differ")
         if args.baseline and args.baseline.resolve() in destinations:
             raise ValueError("Outputs must not replace the input baseline")
-        if args.write_baseline and args.write_baseline.exists():
+        if any(path.is_symlink() for path in (args.output, args.write_baseline) if path):
+            raise ValueError("Output destinations must not be symlinks")
+        if args.output and args.output.exists() and not args.overwrite:
+            raise ValueError("Report output exists; use --overwrite outside baseline mode")
+        if args.write_baseline and (args.write_baseline.exists() or args.write_baseline.is_symlink()):
             raise ValueError("Baseline output already exists")
         if (args.baseline or args.write_baseline) and args.output and args.output.exists():
             raise ValueError("Baseline-mode report output already exists")
         previous = load_baseline(args.baseline) if args.baseline else None
         audit = audit_repository(Path(args.target))
+        if args.write_baseline and audit.uninspected_paths:
+            raise ValueError("Cannot save baseline from incomplete content inspection")
         comparison = compare(audit, previous) if previous is not None else None
         renderer = {"text": render_text, "json": render_json, "html": render_html}[args.format]
         report = render_comparison(audit, comparison, args.format) if comparison else renderer(audit)
         if args.output:
-            mode = "x" if args.baseline or args.write_baseline else "w"
+            mode = "w" if args.overwrite and not (args.baseline or args.write_baseline) else "x"
             with args.output.open(mode, encoding="utf-8") as handle:
                 handle.write(report + ("\n" if args.format != "html" else ""))
             print(f"Wrote {args.format} report to {args.output}")
@@ -50,8 +57,11 @@ def main(argv: list[str] | None = None) -> int:
             print(report)
         if args.write_baseline:
             write_baseline(args.write_baseline, audit)
-    except (OSError, ValueError) as exc:
+    except (OSError, UnicodeError, ValueError) as exc:
         print(f"release-ready: {exc}", file=sys.stderr)
+        return 2
+    if args.new_only and audit.uninspected_paths:
+        print("release-ready: new-only policy is unverified with incomplete content inspection", file=sys.stderr)
         return 2
     findings = comparison.new_findings(audit) if args.new_only and comparison else audit.findings
     if args.fail_on == "never":
