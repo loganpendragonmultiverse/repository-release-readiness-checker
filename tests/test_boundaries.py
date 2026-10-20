@@ -34,7 +34,7 @@ def test_empty_markdown_links_and_secret_targets_are_safe(tmp_path):
     assert any(f["rule"] == "broken-local-link" for f in comparison.resolved)
 
 
-@pytest.mark.parametrize("replacement", [b"x" * 1_000_001, b"\xff"])
+@pytest.mark.parametrize("replacement", [b"x" * 1_000_001, b"\xff"], ids=["oversized-content", "non-utf8"])
 def test_skipped_content_cannot_falsely_resolve_or_replace_baseline(tmp_path, replacement):
     source = tmp_path / "config.txt"
     source.write_text("ghp_" + "syntheticvalueabcdefghij1234567890")
